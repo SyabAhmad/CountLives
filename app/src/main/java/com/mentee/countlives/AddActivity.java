@@ -1,7 +1,9 @@
 package com.mentee.countlives;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -15,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
@@ -121,6 +124,12 @@ public class AddActivity extends AppCompatActivity {
     }
 
     private boolean isNetworkAvailable() {
+        // Check permission before accessing network state
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
+            // Permission not granted, assume network is available or handle accordingly
+            android.util.Log.w("AddActivity", "ACCESS_NETWORK_STATE permission not granted");
+            return true; // Assume available to avoid blocking, or request permission
+        }
         try {
             android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
             if (cm == null) return false;

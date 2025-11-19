@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        // Removed setSupportActionBar to avoid theme conflicts
         // ViewPager + Tabs setup
         ViewPager2 viewPager = findViewById(R.id.viewpager);
         viewPager.setAdapter(new FragmentStateAdapter(this) {
