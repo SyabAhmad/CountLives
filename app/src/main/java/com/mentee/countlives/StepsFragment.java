@@ -22,31 +22,38 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Calendar;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
 
 public class StepsFragment extends Fragment implements SensorEventListener {
     private TextView tvSteps;
-    private MaterialButton btnPrevDay, btnNextDay;
-    private TextView tvChartDay;
-    private android.widget.LinearLayout chartContainer;
+    // Chart UI removed per TODO — step count persists but no chart is displayed
     private RecyclerView rvRecentMini;
     private ActivityAdapter miniAdapter;
     private java.util.List<ActivityEntry> miniActivities = new java.util.ArrayList<>();
     private TextView tvMotivation;
     private TextView tvNoRecentActivities;
-    private int dayOffset = 0; // 0 == today, -1 yesterday, etc.
+    // dayOffset removed (chart not required)
     private android.widget.ImageView ivMotiv1, ivMotiv2, ivMotiv3;
     private SensorManager sensorManager;
     private Sensor stepSensor;
     private int liveSteps = 0;
+    private Gson gson = new Gson();
+    private static final String PREFS = "CountLivesPrefs";
+    private static final String KEY_STEPS_MAP = "steps_by_date";
+    // No refresh handler or chart button (removed)
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_steps, container, false);
-        btnPrevDay = v.findViewById(R.id.btnPrevDay);
-        btnNextDay = v.findViewById(R.id.btnNextDay);
-        tvChartDay = v.findViewById(R.id.tvChartDay);
-        chartContainer = v.findViewById(R.id.chartContainer);
+        // Chart UI removed - don't bind chart related views
         tvMotivation = v.findViewById(R.id.tvMotivation);
         rvRecentMini = v.findViewById(R.id.rvRecentMini);
         rvRecentMini.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
@@ -70,15 +77,10 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         ivMotiv3 = v.findViewById(R.id.ivMotiv3);
         loadMotivationalImages();
 
-        btnPrevDay.setOnClickListener(view -> {
-            dayOffset -= 1;
-            updateChart();
-        });
-        btnNextDay.setOnClickListener(view -> {
-            dayOffset += 1;
-            updateChart();
-        });
-        updateChart();
+        // Chart navigation removed
+        // refresh button removed with chart
+
+        loadTodayStepsFromPrefs();
         loadMiniActivities();
         return v;
     }
@@ -101,12 +103,16 @@ public class StepsFragment extends Fragment implements SensorEventListener {
                 }
             }
         }
+        // No auto-refresh required; chart removed
     }
 
     @Override
     public void onPause() {
         super.onPause();
         if (sensorManager != null) sensorManager.unregisterListener(this);
+        // No auto-refresh handler to clear
+        // save live steps when the fragment pauses
+        updateTodayStepsInPrefs(liveSteps);
     }
 
     @Override
@@ -114,6 +120,8 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
             liveSteps += (int) event.values[0];
             tvSteps.setText(String.valueOf(liveSteps));
+            // persist today steps when sensors update
+            updateTodayStepsInPrefs(liveSteps);
         }
     }
 
@@ -126,61 +134,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         outState.putInt("liveSteps", liveSteps);
     }
 
-    private void updateChart() {
-        // For demo: generate 24 hourly values for dayOffset
-        // Today (dayOffset == 0) shows empty chart, past days show data
-        chartContainer.removeAllViews();
-        int[] values = new int[24];
-        int max = 1;
-        
-        // Only generate data for past days, not today
-        if (dayOffset < 0) {
-            for (int i = 0; i < 24; i++) {
-                values[i] = (int) ((Math.random() * 500) + 200 * Math.abs(dayOffset));
-                if (values[i] > max) max = values[i];
-            }
-        } else {
-            // Today - all zeros, no bars shown
-            for (int i = 0; i < 24; i++) {
-                values[i] = 0;
-            }
-            max = 100; // prevents division by zero
-        }
-        
-        // build bars - only show if value > 0
-        final int barWidthDp = 20;
-        for (int i = 0; i < 24; i++) {
-            if (values[i] > 0) {
-                View bar = new View(getContext());
-                int height = (int) ((values[i] / (float) max) * 200); // scale to 200px
-                android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams((int) (barWidthDp * getResources().getDisplayMetrics().density), height);
-                lp.setMargins(6, 0, 6, 0);
-                bar.setLayoutParams(lp);
-                bar.setBackgroundColor(getResources().getColor(R.color.primary_blue_500));
-                // add onClick to show a tooltip or toast with hourly value
-                final int hourVal = values[i];
-                final int hourIndex = i;
-                bar.setOnClickListener(v -> android.widget.Toast.makeText(getContext(), "Hour " + hourIndex + ": " + hourVal + " steps", android.widget.Toast.LENGTH_SHORT).show());
-                chartContainer.addView(bar);
-            }
-        }
-        
-        // If no data, show empty message
-        if (dayOffset == 0) {
-            android.widget.TextView tvEmptyChart = new android.widget.TextView(getContext());
-            tvEmptyChart.setText("No data yet - chart will update as you log activities");
-            tvEmptyChart.setTextSize(14);
-            tvEmptyChart.setTextColor(getResources().getColor(R.color.primary_blue_700));
-            tvEmptyChart.setGravity(android.view.Gravity.CENTER);
-            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT);
-            tvEmptyChart.setLayoutParams(lp);
-            chartContainer.addView(tvEmptyChart);
-        }
-        
-        tvChartDay.setText(dayOffset == 0 ? "Today" : (dayOffset < 0 ? Math.abs(dayOffset) + "d ago" : "+" + dayOffset + "d"));
-    }
+    // Chart logic removed; display step count only per TODO.md requirements
 
     public void loadMiniActivities() {
         android.content.SharedPreferences prefs = getContext().getSharedPreferences("CountLivesPrefs", Context.MODE_PRIVATE);
@@ -193,7 +147,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
             android.util.Log.i("StepsFragment", "loadMiniActivities: parsed saved size=" + (saved == null ? 0 : saved.size()));
             if (saved != null) miniActivities.addAll(saved);
         }
-        while (miniActivities.size() > 3) miniActivities.remove(miniActivities.size() - 1);
+        while (miniActivities.size() > 5) miniActivities.remove(miniActivities.size() - 1);
         android.util.Log.i("StepsFragment", "loadMiniActivities: miniActivities size after trim=" + miniActivities.size());
         if (miniAdapter != null) {
             miniAdapter.notifyDataSetChanged();
@@ -206,6 +160,54 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         }
         rvRecentMini.setVisibility(miniActivities.isEmpty() ? View.GONE : View.VISIBLE);
         updateMotivation();
+    }
+
+    // Load the map of date->steps from SharedPreferences
+    private Map<String, Integer> loadStepsMap() {
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY_STEPS_MAP, null);
+        if (json == null || json.trim().isEmpty()) return new HashMap<>();
+        try {
+            Type type = new TypeToken<Map<String, Integer>>(){}.getType();
+            Map<String, Integer> map = gson.fromJson(json, type);
+            if (map == null) return new HashMap<>();
+            return map;
+        } catch (Exception e) {
+            android.util.Log.w("StepsFragment", "loadStepsMap: failed to parse map", e);
+            return new HashMap<>();
+        }
+    }
+
+    private void saveStepsMap(Map<String, Integer> map) {
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        android.content.SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(KEY_STEPS_MAP, gson.toJson(map));
+        editor.apply();
+    }
+
+    private void updateTodayStepsInPrefs(int steps) {
+        Map<String, Integer> map = loadStepsMap();
+        String key = getDateKey(0);
+        map.put(key, steps);
+        saveStepsMap(map);
+        android.util.Log.i("StepsFragment", "updateTodayStepsInPrefs: saved " + steps + " for " + key);
+    }
+
+    private void loadTodayStepsFromPrefs() {
+        Map<String, Integer> map = loadStepsMap();
+        String key = getDateKey(0);
+        int steps = 0;
+        if (map != null && map.containsKey(key)) steps = map.get(key);
+        liveSteps = steps;
+        if (tvSteps != null) tvSteps.setText(String.valueOf(liveSteps));
+        android.util.Log.i("StepsFragment", "loadTodayStepsFromPrefs: loaded " + steps + " for " + key);
+    }
+
+    private String getDateKey(int dayOffset) {
+        Calendar c = Calendar.getInstance();
+        if (dayOffset != 0) c.add(Calendar.DAY_OF_YEAR, dayOffset);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        return sdf.format(c.getTime());
     }
 
     private void updateMotivation() {
@@ -238,17 +240,50 @@ public class StepsFragment extends Fragment implements SensorEventListener {
                 .load(motivationUrls[0])
                 .apply(options)
                 .into(ivMotiv1);
+        ivMotiv1.setOnClickListener(v -> {
+            if (getContext() != null) {
+                try {
+                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                    intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[0]);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
+                }
+            }
+        });
 
         // Load second image
         com.bumptech.glide.Glide.with(this)
                 .load(motivationUrls[1])
                 .apply(options)
                 .into(ivMotiv2);
+        ivMotiv2.setOnClickListener(v -> {
+            if (getContext() != null) {
+                try {
+                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                    intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[1]);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
+                }
+            }
+        });
 
         // Load third image
         com.bumptech.glide.Glide.with(this)
                 .load(motivationUrls[2])
                 .apply(options)
                 .into(ivMotiv3);
+        ivMotiv3.setOnClickListener(v -> {
+            if (getContext() != null) {
+                try {
+                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                    intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[2]);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
+                }
+            }
+        });
     }
 }

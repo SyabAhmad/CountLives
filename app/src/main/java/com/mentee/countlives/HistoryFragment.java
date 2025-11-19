@@ -132,8 +132,8 @@ public class HistoryFragment extends Fragment {
             android.util.Log.i("HistoryFragment", "loadActivities: parsed saved size=" + (saved == null ? 0 : saved.size()));
             if (saved != null) activities.addAll(saved);
         }
-        // Limit to 3 or 5 based on showingAll flag
-        int limit = showingAll ? 5 : 3;
+        // If showingAll is true, show everything. Otherwise show up to 5 items by default.
+        int limit = showingAll ? Integer.MAX_VALUE : 5;
         while (activities.size() > limit) {
             activities.remove(activities.size() - 1);
         }

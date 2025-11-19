@@ -30,6 +30,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+// removed menu imports for ReportActivity
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
@@ -53,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         // ViewPager + Tabs setup
         ViewPager2 viewPager = findViewById(R.id.viewpager);
         viewPager.setAdapter(new FragmentStateAdapter(this) {
@@ -91,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    // Removed menu options for ReportActivity per user request
 
     private void showActivityImage(ActivityEntry entry) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);

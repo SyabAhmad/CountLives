@@ -12,18 +12,6 @@
         android:gravity="center_horizontal"
         android:padding="24dp">
 
-        <!-- Header -->
-        <TextView
-            android:id="@+id/tvStepsLabelFrag"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Today's Steps"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
-            android:textColor="@color/secondary_teal_500"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginTop="8dp" />
-
         <!-- Big Step Count in Center -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="280dp"
@@ -56,78 +44,6 @@
                     android:textColor="@color/white"
                     android:layout_marginTop="8dp" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Day Navigation -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="16dp">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPrevDay"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:padding="0dp"
-                app:icon="@drawable/ic_baseline_chevron_left_24"
-                app:iconGravity="textStart"
-                app:cornerRadius="24dp"
-                android:contentDescription="Previous day"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                app:strokeColor="@color/secondary_teal_500" />
-
-            <TextView
-                android:id="@+id/tvChartDay"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Today"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/primary_blue_700"
-                android:layout_marginHorizontal="24dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNextDay"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:padding="0dp"
-                app:icon="@drawable/ic_baseline_chevron_right_24"
-                app:iconGravity="textStart"
-                app:cornerRadius="24dp"
-                android:contentDescription="Next day"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                app:strokeColor="@color/secondary_teal_500" />
-
-        </LinearLayout>
-
-        <!-- Chart -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="240dp"
-            android:layout_marginVertical="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
-
-            <HorizontalScrollView
-                android:id="@+id/scrollChart"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:fillViewport="true"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:id="@+id/chartContainer"
-                    android:orientation="horizontal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="bottom"
-                    android:spacing="6dp" />
-
-            </HorizontalScrollView>
-
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Motivation -->
@@ -234,7 +150,7 @@
                     <!-- Image 1 -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="140dp"
                         android:layout_weight="1"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="2dp">
@@ -252,7 +168,7 @@
                     <!-- Image 2 -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="140dp"
                         android:layout_weight="1"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="2dp">
@@ -270,7 +186,7 @@
                     <!-- Image 3 -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="100dp"
+                        android:layout_height="140dp"
                         android:layout_weight="1"
                         app:cardCornerRadius="8dp"
                         app:cardElevation="2dp">
