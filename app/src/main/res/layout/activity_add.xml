@@ -33,30 +33,46 @@
             android:layout_height="wrap_content"
             android:hint="Image URL" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLoadImage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            style="@style/Theme.CountLives.PillButton"
             android:text="@string/load_image" />
 
-        <ImageView
-            android:id="@+id/ivPreview"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:layout_marginTop="8dp"
-            android:scaleType="centerCrop" />
+            android:layout_marginTop="8dp">
 
-        <Button
+            <ImageView
+                android:id="@+id/ivPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+
+            <ProgressBar
+                android:id="@+id/progressPreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveActivity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            style="@style/Theme.CountLives.PillButton"
             android:text="@string/save_activity"
             android:layout_marginTop="16dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnBack"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            style="@style/Theme.CountLives.PillButton"
             android:text="@string/back"
             android:layout_marginTop="8dp" />
 

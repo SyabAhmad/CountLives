@@ -1,16 +1,30 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.CountLives" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.CountLives" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorPrimary">@color/primary_blue_700</item>
+        <item name="colorPrimaryVariant">@color/primary_blue_900</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
+        <item name="colorSecondary">@color/secondary_teal_500</item>
+        <item name="colorSecondaryVariant">@color/secondary_teal_700</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <!-- Tertiary colors -->
+        <item name="colorTertiary">@color/primary_blue_500</item>
+        <!-- Apply our styles to material components -->
+        <item name="materialButtonStyle">@style/Theme.CountLives.PillButton</item>
+        <item name="materialCardViewStyle">@style/CountLives.Card</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.CountLives.Button</item>
+        <item name="android:buttonStyle">@style/Theme.CountLives.PillButton</item>
+        <item name="cardViewStyle">@style/CountLives.Card</item>
+        <!-- Status bar styling -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+        <item name="android:navigationBarColor">?attr/colorPrimary</item>
+        <item name="android:windowBackground">@color/white</item>
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="android:textColorSecondary">@color/black</item>
+        <!-- Other Material Components -->
+        <item name="tabStyle">@style/Widget.MaterialComponents.TabLayout</item>
     </style>
 </resources>

@@ -17,6 +17,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.tabs.TabLayout;
+import androidx.viewpager2.widget.ViewPager2;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -35,17 +40,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity {
     private static final String PREFS = "CountLivesPrefs";
     private static final String KEY_ACTIVITIES = "activities";
 
-    private TextView tvSteps;
-    private SensorManager sensorManager;
-    private Sensor stepSensor;
-    private int liveSteps = 0;
-
     private List<ActivityEntry> activities = new ArrayList<>();
-    private ActivityAdapter adapter;
     private Gson gson = new Gson();
 
     private ActivityResultLauncher<Intent> addActivityLauncher;
@@ -54,25 +53,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        tvSteps = findViewById(R.id.tvSteps);
-        RecyclerView rv = findViewById(R.id.rvActivities);
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new ActivityAdapter(activities, this::showActivityImage);
-        rv.setAdapter(adapter);
+        // ViewPager + Tabs setup
+        ViewPager2 viewPager = findViewById(R.id.viewpager);
+        viewPager.setAdapter(new FragmentStateAdapter(this) {
+            @NonNull
+            @Override
+            public androidx.fragment.app.Fragment createFragment(int position) {
+                return position == 0 ? new StepsFragment() : new HistoryFragment();
+            }
 
-        Button btnAdd = findViewById(R.id.btnAddActivity);
-        btnAdd.setOnClickListener(v -> {
+            @Override
+            public int getItemCount() { return 2; }
+        });
+        TabLayout tabLayoutBottom = findViewById(R.id.tabLayoutBottom);
+        new TabLayoutMediator(tabLayoutBottom, viewPager, (tab, position) -> {
+            tab.setIcon(position == 0 ? R.drawable.ic_tab_steps : R.drawable.ic_tab_history);
+            tab.setText(null);
+        }).attach();
+
+        FloatingActionButton fab = findViewById(R.id.fabAdd);
+        fab.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, AddActivity.class);
             addActivityLauncher.launch(intent);
         });
-
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
-            stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-            if (stepSensor == null) {
-                tvSteps.setText("Sensor not found");
-            }
-        }
 
         loadActivities();
 
@@ -94,13 +97,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ImageView iv = new ImageView(this);
         iv.setAdjustViewBounds(true);
         if (entry.imageUrl != null && !entry.imageUrl.isEmpty()) {
-            Glide.with(this).load(entry.imageUrl).into(iv);
+            try {
+                Glide.with(this).load(entry.imageUrl).placeholder(R.drawable.ic_image_placeholder).error(R.drawable.ic_image_placeholder).into(iv);
+            } catch (Exception e) {
+                iv.setImageResource(R.drawable.ic_image_placeholder);
+                android.util.Log.w("MainActivity", "Failed to load dialog image", e);
+            }
         } else {
-            iv.setImageResource(R.drawable.ic_launcher_foreground);
+            iv.setImageResource(R.drawable.ic_image_placeholder);
         }
         builder.setView(iv)
                 .setPositiveButton("Close", (dialog, which) -> dialog.dismiss())
                 .show();
+    }
+
+    public void showActivityDialog(ActivityEntry entry) {
+        // open ImageActivity to reduce crash surface
+        if (entry.imageUrl != null && !entry.imageUrl.isEmpty()) {
+            try {
+                Intent intent = new Intent(MainActivity.this, ImageActivity.class);
+                intent.putExtra(ImageActivity.EXTRA_URL, entry.imageUrl);
+                startActivity(intent);
+            } catch (Exception e) {
+                // fallback to existing dialog
+                showActivityImage(entry);
+            }
+        } else {
+            showActivityImage(entry);
+        }
+    }
+
+    public void launchAddActivity() {
+        Intent intent = new Intent(MainActivity.this, AddActivity.class);
+        addActivityLauncher.launch(intent);
     }
 
     private void loadActivities() {
@@ -118,46 +147,25 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         while (activities.size() > 5) {
             activities.remove(activities.size() - 1);
         }
-        adapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
-            // each event contains the number of steps (usually 1.0)
-            liveSteps += (int) event.values[0];
-            tvSteps.setText(String.valueOf(liveSteps));
+        // If a HistoryFragment exists, notify it to refresh
+        for (androidx.fragment.app.Fragment f : getSupportFragmentManager().getFragments()) {
+            if (f instanceof HistoryFragment) {
+                ((HistoryFragment) f).loadActivities();
+            }
+            if (f instanceof StepsFragment) {
+                ((StepsFragment) f).loadMiniActivities();
+            }
         }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (stepSensor != null) {
-            sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        sensorManager.unregisterListener(this);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == 1001) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted
-            } else {
-                // Permission denied
-                tvSteps.setText("Permission denied");
+            for (androidx.fragment.app.Fragment f : getSupportFragmentManager().getFragments()) {
+                if (f instanceof StepsFragment) {
+                    // Let StepsFragment handle registration and updates when permission changes
+                }
             }
         }
     }

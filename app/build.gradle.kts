@@ -40,6 +40,8 @@ dependencies {
     implementation(libs.glide)
     annotationProcessor(libs.glide.compiler)
     implementation(libs.gson)
+    implementation(libs.viewpager2)
+    // Removed graph library, using custom chart implementation instead
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

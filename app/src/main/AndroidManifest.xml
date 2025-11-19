@@ -21,6 +21,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".AddActivity" android:exported="false" />
+        <activity android:name=".ImageActivity" android:exported="false" />
     </application>
 
 </manifest>
