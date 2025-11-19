@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">CountLives</string>
+    <string name="add_activity">Add Activity</string>
+    <string name="load_image">Load Image</string>
+    <string name="save_activity">Save</string>
+    <string name="back">Back</string>
+    <string-array name="activity_types">
+        <item>Walking</item>
+        <item>Running</item>
+        <item>Cycling</item>
+        <item>Arms</item>
+        <item>Legs</item>
+        <item>Back</item>
+    </string-array>
+</resources>
