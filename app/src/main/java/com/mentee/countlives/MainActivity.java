@@ -74,18 +74,24 @@ public class MainActivity extends AppCompatActivity {
             tab.setText(null);
         }).attach();
 
-        FloatingActionButton fab = findViewById(R.id.fabAdd);
-        fab.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, AddActivity.class);
-            addActivityLauncher.launch(intent);
-        });
-
-        loadActivities();
-
+        // Setup activity result launcher before wiring UI so it's safe during rotation and click events
         addActivityLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             // Refresh list after add activity
             loadActivities();
         });
+
+        FloatingActionButton fab = findViewById(R.id.fabAdd);
+        fab.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, AddActivity.class);
+            if (addActivityLauncher != null) {
+                addActivityLauncher.launch(intent);
+            } else {
+                // fallback
+                startActivity(intent);
+            }
+        });
+
+        loadActivities();
 
         // Request ACTIVITY_RECOGNITION permission on Android Q (29) and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

@@ -27,6 +27,7 @@ public class HistoryFragment extends Fragment {
     private RecyclerView rv;
     private List<ActivityEntry> activities = new ArrayList<>();
     private ActivityAdapter adapter;
+    private RecyclerView.OnItemTouchListener recyclerItemClickListener;
     private Gson gson = new Gson();
     private android.widget.TextView tvEmptyState;
     private android.widget.LinearLayout llEmptyStateContainer;
@@ -61,7 +62,7 @@ public class HistoryFragment extends Fragment {
         rv.setAdapter(adapter);
 
         // long press to delete
-        rv.addOnItemTouchListener(new RecyclerItemClickListener(getContext(), rv, new RecyclerItemClickListener.OnItemClickListener() {
+        recyclerItemClickListener = new RecyclerItemClickListener(getContext(), rv, new RecyclerItemClickListener.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
                 try {
@@ -91,7 +92,8 @@ public class HistoryFragment extends Fragment {
                         .setNegativeButton("Cancel", null)
                         .show();
             }
-        }));
+        });
+        if (rv != null && recyclerItemClickListener != null) rv.addOnItemTouchListener(recyclerItemClickListener);
 
         btnAdd.setOnClickListener(v1 -> {
             if (getActivity() instanceof MainActivity) {
@@ -112,6 +114,24 @@ public class HistoryFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadActivities();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Avoid holding references to view objects after the view is destroyed
+        rv = null;
+        adapter = null;
+        tvEmptyState = null;
+        llEmptyStateContainer = null;
+        // If an item click listener was attached, remove it now to avoid callbacks to a destroyed fragment
+        if (recyclerItemClickListener != null && rv != null) {
+            try {
+                rv.removeOnItemTouchListener(recyclerItemClickListener);
+            } catch (Exception e) {
+                android.util.Log.w("HistoryFragment", "Failed to remove RecyclerItemClickListener", e);
+            }
+        }
     }
 
     private void saveActivities() {
@@ -137,11 +157,11 @@ public class HistoryFragment extends Fragment {
         while (activities.size() > limit) {
             activities.remove(activities.size() - 1);
         }
-        adapter.notifyDataSetChanged();
+        if (adapter != null) adapter.notifyDataSetChanged();
         boolean empty = activities.isEmpty();
-        tvEmptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        if (tvEmptyState != null) tvEmptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
         if (llEmptyStateContainer != null) llEmptyStateContainer.setVisibility(empty ? View.VISIBLE : View.GONE);
-        rv.setVisibility(empty ? View.GONE : View.VISIBLE);
+        if (rv != null) rv.setVisibility(empty ? View.GONE : View.VISIBLE);
         android.util.Log.i("HistoryFragment", "loadActivities: activities after trim=" + activities.size() + ", adapterCount=" + (adapter == null ? 0 : adapter.getItemCount()));
     }
 

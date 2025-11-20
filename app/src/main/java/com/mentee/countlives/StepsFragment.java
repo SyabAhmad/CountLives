@@ -75,6 +75,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         ivMotiv1 = v.findViewById(R.id.ivMotiv1);
         ivMotiv2 = v.findViewById(R.id.ivMotiv2);
         ivMotiv3 = v.findViewById(R.id.ivMotiv3);
+        // Only load images if the views are present in the current layout (may be absent in some variants)
         loadMotivationalImages();
 
         // Chart navigation removed
@@ -92,7 +93,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         sensorManager = (SensorManager) getActivity().getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager != null) {
             stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-            if (stepSensor == null) tvSteps.setText("Sensor not found");
+            if (stepSensor == null && tvSteps != null) tvSteps.setText("Sensor not found");
             else {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED) {
@@ -116,10 +117,33 @@ public class StepsFragment extends Fragment implements SensorEventListener {
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // clear view references to avoid accessing them after view is destroyed (prevents NPEs on rotation)
+        try {
+            if (ivMotiv1 != null) com.bumptech.glide.Glide.with(this).clear(ivMotiv1);
+            if (ivMotiv2 != null) com.bumptech.glide.Glide.with(this).clear(ivMotiv2);
+            if (ivMotiv3 != null) com.bumptech.glide.Glide.with(this).clear(ivMotiv3);
+        } catch (Exception e) {
+            android.util.Log.w("StepsFragment", "Failed to clear Glide requests", e);
+        }
+        tvSteps = null;
+        tvMotivation = null;
+        tvNoRecentActivities = null;
+        rvRecentMini = null;
+        miniAdapter = null;
+        ivMotiv1 = null;
+        ivMotiv2 = null;
+        ivMotiv3 = null;
+        sensorManager = null; // avoid accidental reuse; re-acquire in onResume
+        stepSensor = null;
+    }
+
+    @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
             liveSteps += (int) event.values[0];
-            tvSteps.setText(String.valueOf(liveSteps));
+            if (tvSteps != null) tvSteps.setText(String.valueOf(liveSteps));
             // persist today steps when sensors update
             updateTodayStepsInPrefs(liveSteps);
         }
@@ -137,6 +161,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
     // Chart logic removed; display step count only per TODO.md requirements
 
     public void loadMiniActivities() {
+        if (getContext() == null) return; // fragment not attached - skip
         android.content.SharedPreferences prefs = getContext().getSharedPreferences("CountLivesPrefs", Context.MODE_PRIVATE);
         String json = prefs.getString("activities", null);
         android.util.Log.i("StepsFragment", "loadMiniActivities: json=" + json);
@@ -158,12 +183,15 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         if (tvNoRecentActivities != null) {
             tvNoRecentActivities.setVisibility(miniActivities.isEmpty() ? View.VISIBLE : View.GONE);
         }
-        rvRecentMini.setVisibility(miniActivities.isEmpty() ? View.GONE : View.VISIBLE);
+        if (rvRecentMini != null) {
+            rvRecentMini.setVisibility(miniActivities.isEmpty() ? View.GONE : View.VISIBLE);
+        }
         updateMotivation();
     }
 
     // Load the map of date->steps from SharedPreferences
     private Map<String, Integer> loadStepsMap() {
+        if (getContext() == null) return new HashMap<>();
         android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String json = prefs.getString(KEY_STEPS_MAP, null);
         if (json == null || json.trim().isEmpty()) return new HashMap<>();
@@ -179,6 +207,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
     }
 
     private void saveStepsMap(Map<String, Integer> map) {
+        if (getContext() == null) return;
         android.content.SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         android.content.SharedPreferences.Editor editor = prefs.edit();
         editor.putString(KEY_STEPS_MAP, gson.toJson(map));
@@ -186,6 +215,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
     }
 
     private void updateTodayStepsInPrefs(int steps) {
+        if (getContext() == null) return;
         Map<String, Integer> map = loadStepsMap();
         String key = getDateKey(0);
         map.put(key, steps);
@@ -194,6 +224,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
     }
 
     private void loadTodayStepsFromPrefs() {
+        if (getContext() == null) return;
         Map<String, Integer> map = loadStepsMap();
         String key = getDateKey(0);
         int steps = 0;
@@ -214,11 +245,11 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         int totalMinutes = 0;
         for (ActivityEntry e : miniActivities) totalMinutes += e.durationMinutes;
         if (totalMinutes >= 60) {
-            tvMotivation.setText("Amazing — you logged " + totalMinutes + " min recently. Keep it up!");
+            if (tvMotivation != null) tvMotivation.setText("Amazing — you logged " + totalMinutes + " min recently. Keep it up!");
         } else if (totalMinutes > 0) {
-            tvMotivation.setText("Nice — " + totalMinutes + " min logged, aim for 60 minutes today!");
+            if (tvMotivation != null) tvMotivation.setText("Nice — " + totalMinutes + " min logged, aim for 60 minutes today!");
         } else {
-            tvMotivation.setText("No recent activities yet — try logging a 10-minute walk.");
+            if (tvMotivation != null) tvMotivation.setText("No recent activities yet — try logging a 10-minute walk.");
         }
     }
 
@@ -235,55 +266,73 @@ public class StepsFragment extends Fragment implements SensorEventListener {
                 .error(R.drawable.ic_launcher_foreground)
                 .centerCrop();
 
-        // Load first image
-        com.bumptech.glide.Glide.with(this)
-                .load(motivationUrls[0])
-                .apply(options)
-                .into(ivMotiv1);
-        ivMotiv1.setOnClickListener(v -> {
-            if (getContext() != null) {
-                try {
-                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
-                    intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[0]);
-                    startActivity(intent);
-                } catch (Exception e) {
-                    android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
-                }
+        // Load first image and wire click only if view exists
+        if (ivMotiv1 != null) {
+            try {
+                com.bumptech.glide.Glide.with(this)
+                    .load(motivationUrls[0])
+                    .apply(options)
+                    .into(ivMotiv1);
+            } catch (Exception e) {
+                android.util.Log.w("StepsFragment", "Failed to load motivational image 1", e);
             }
-        });
+            ivMotiv1.setOnClickListener(v -> {
+                if (getContext() != null) {
+                    try {
+                        android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                        intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[0]);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
+                    }
+                }
+            });
+        }
 
         // Load second image
-        com.bumptech.glide.Glide.with(this)
-                .load(motivationUrls[1])
-                .apply(options)
-                .into(ivMotiv2);
-        ivMotiv2.setOnClickListener(v -> {
-            if (getContext() != null) {
-                try {
-                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
-                    intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[1]);
-                    startActivity(intent);
-                } catch (Exception e) {
-                    android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
-                }
+        if (ivMotiv2 != null) {
+            try {
+                com.bumptech.glide.Glide.with(this)
+                    .load(motivationUrls[1])
+                    .apply(options)
+                    .into(ivMotiv2);
+            } catch (Exception e) {
+                android.util.Log.w("StepsFragment", "Failed to load motivational image 2", e);
             }
-        });
+        }
+            ivMotiv2.setOnClickListener(v -> {
+                if (getContext() != null) {
+                    try {
+                        android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                        intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[1]);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
+                    }
+                }
+            });
 
         // Load third image
-        com.bumptech.glide.Glide.with(this)
-                .load(motivationUrls[2])
-                .apply(options)
-                .into(ivMotiv3);
-        ivMotiv3.setOnClickListener(v -> {
-            if (getContext() != null) {
-                try {
-                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
-                    intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[2]);
-                    startActivity(intent);
-                } catch (Exception e) {
-                    android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
-                }
+        if (ivMotiv3 != null) {
+            try {
+                com.bumptech.glide.Glide.with(this)
+                    .load(motivationUrls[2])
+                    .apply(options)
+                    .into(ivMotiv3);
+            } catch (Exception e) {
+                android.util.Log.w("StepsFragment", "Failed to load motivational image 3", e);
             }
-        });
+        }
+            ivMotiv3.setOnClickListener(v -> {
+                if (getContext() != null) {
+                    try {
+                        android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                        intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[2]);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
+                    }
+                }
+            });
     }
 }
