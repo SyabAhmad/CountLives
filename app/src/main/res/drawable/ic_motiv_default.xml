@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Simple motivational default icon: a stylized runner/flag. Keep license-safe. -->
+    <path android:fillColor="#FF9CCC65" android:pathData="M13 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zM8 8.5c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zM21 21c0 1.1-.9 2-2 2h-12c-1.1 0-2-.9-2-2v-9c0-.6.4-1 1-1h2l1.5-3 3.5 1 3 4 2 8z"/>
+</vector>

@@ -107,6 +107,8 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         ImageView iv = new ImageView(this);
         iv.setAdjustViewBounds(true);
+        final String remoteFallback = "https://images.squarespace-cdn.com/content/v1/64a5428b0a8e4f5a25060263/4299df31-6dda-475e-a87b-c9069ffd3277/Olympic+weightlifting+-+Fortress+Gym+4.jpg";
+
         if (entry.imageUrl != null && !entry.imageUrl.isEmpty()) {
             try {
                 Glide.with(this).load(entry.imageUrl).placeholder(R.drawable.ic_image_placeholder).error(R.drawable.ic_image_placeholder).into(iv);
@@ -115,7 +117,16 @@ public class MainActivity extends AppCompatActivity {
                 android.util.Log.w("MainActivity", "Failed to load dialog image", e);
             }
         } else {
-            iv.setImageResource(R.drawable.ic_image_placeholder);
+            // No user image — try remote fallback, otherwise use placeholder
+            try {
+                com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                        .placeholder(R.drawable.ic_image_placeholder)
+                        .error(R.drawable.ic_image_placeholder)
+                        .centerCrop();
+                Glide.with(this).load(remoteFallback).apply(options).into(iv);
+            } catch (Exception e) {
+                iv.setImageResource(R.drawable.ic_image_placeholder);
+            }
         }
         builder.setView(iv)
                 .setPositiveButton("Close", (dialog, which) -> dialog.dismiss())
@@ -124,6 +135,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void showActivityDialog(ActivityEntry entry) {
         // open ImageActivity to reduce crash surface
+        final String remoteFallback = "https://images.squarespace-cdn.com/content/v1/64a5428b0a8e4f5a25060263/4299df31-6dda-475e-a87b-c9069ffd3277/Olympic+weightlifting+-+Fortress+Gym+4.jpg";
+
         if (entry.imageUrl != null && !entry.imageUrl.isEmpty()) {
             try {
                 Intent intent = new Intent(MainActivity.this, ImageActivity.class);
@@ -134,7 +147,14 @@ public class MainActivity extends AppCompatActivity {
                 showActivityImage(entry);
             }
         } else {
-            showActivityImage(entry);
+            // if no image URL, prefer the remote fallback
+            try {
+                Intent intent = new Intent(MainActivity.this, ImageActivity.class);
+                intent.putExtra(ImageActivity.EXTRA_URL, remoteFallback);
+                startActivity(intent);
+            } catch (Exception e) {
+                showActivityImage(entry);
+            }
         }
     }
 

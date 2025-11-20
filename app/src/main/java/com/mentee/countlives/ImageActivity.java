@@ -37,13 +37,21 @@ public class ImageActivity extends AppCompatActivity {
             return;
         }
         pb.setVisibility(View.VISIBLE);
+        final String remoteFallback = "https://images.squarespace-cdn.com/content/v1/64a5428b0a8e4f5a25060263/4299df31-6dda-475e-a87b-c9069ffd3277/Olympic+weightlifting+-+Fortress+Gym+4.jpg";
+
         try {
             Glide.with(this).load(url).placeholder(R.drawable.ic_image_placeholder).error(R.drawable.ic_image_placeholder)
                     .listener(new com.bumptech.glide.request.RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<Drawable> target, boolean isFirstResource) {
                             pb.setVisibility(View.GONE);
-                            Toast.makeText(ImageActivity.this, "Failed to load image", Toast.LENGTH_SHORT).show();
+                            // Try a remote fallback image if original failed
+                            try {
+                                Glide.with(ImageActivity.this).load(remoteFallback).placeholder(R.drawable.ic_image_placeholder).error(R.drawable.ic_image_placeholder).into(iv);
+                            } catch (Exception ex) {
+                                iv.setImageResource(R.drawable.ic_image_placeholder);
+                                Toast.makeText(ImageActivity.this, "Failed to load image", Toast.LENGTH_SHORT).show();
+                            }
                             return false;
                         }
 

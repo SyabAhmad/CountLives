@@ -69,11 +69,12 @@ public class HistoryFragment extends Fragment {
                     if (position < 0 || position >= activities.size()) return;
                     ActivityEntry entry = activities.get(position);
                     if (entry == null) return;
-                    if (entry.imageUrl != null && !entry.imageUrl.isEmpty()) {
-                        android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
-                        intent.putExtra(ImageActivity.EXTRA_URL, entry.imageUrl);
-                        startActivity(intent);
-                    }
+                    // If user provided an image, use it; otherwise prefer remote fallback
+                    final String remoteFallback = "https://images.squarespace-cdn.com/content/v1/64a5428b0a8e4f5a25060263/4299df31-6dda-475e-a87b-c9069ffd3277/Olympic+weightlifting+-+Fortress+Gym+4.jpg";
+                    String urlToOpen = (entry.imageUrl != null && !entry.imageUrl.isEmpty()) ? entry.imageUrl : remoteFallback;
+                    android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
+                    intent.putExtra(ImageActivity.EXTRA_URL, urlToOpen);
+                    startActivity(intent);
                 } catch (Exception e) {
                     android.util.Log.w("HistoryFragment", "Failed to handle item click", e);
                 }
@@ -172,6 +173,8 @@ public class HistoryFragment extends Fragment {
         final ImageView iv = dialogView.findViewById(R.id.ivDialogImage);
         final android.widget.ProgressBar pb = dialogView.findViewById(R.id.pbDialogImage);
         pb.setVisibility(View.VISIBLE);
+        final String remoteFallback = "https://images.squarespace-cdn.com/content/v1/64a5428b0a8e4f5a25060263/4299df31-6dda-475e-a87b-c9069ffd3277/Olympic+weightlifting+-+Fortress+Gym+4.jpg";
+
         if (entry.imageUrl != null && !entry.imageUrl.isEmpty()) {
                 com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
                     .placeholder(R.drawable.ic_image_placeholder)
@@ -183,6 +186,13 @@ public class HistoryFragment extends Fragment {
                 @Override
                 public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
                     pb.setVisibility(View.GONE);
+                    // try remote fallback
+                    try {
+                        com.bumptech.glide.Glide.with(HistoryFragment.this).load(remoteFallback).apply(options).into(iv);
+                    } catch (Exception ex) {
+                        iv.setImageResource(R.drawable.ic_image_placeholder);
+                        android.util.Log.w("HistoryFragment", "Remote fallback failed", ex);
+                    }
                     return false;
                 }
 
@@ -199,7 +209,15 @@ public class HistoryFragment extends Fragment {
             }
         } else {
             pb.setVisibility(View.GONE);
-            iv.setImageResource(R.drawable.ic_launcher_foreground);
+            try {
+                com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                        .placeholder(R.drawable.ic_image_placeholder)
+                        .error(R.drawable.ic_image_placeholder)
+                        .centerCrop();
+                com.bumptech.glide.Glide.with(this).load(remoteFallback).apply(options).into(iv);
+            } catch (Exception e) {
+                iv.setImageResource(R.drawable.ic_image_placeholder);
+            }
         }
         new AlertDialog.Builder(getContext())
                 .setView(dialogView)

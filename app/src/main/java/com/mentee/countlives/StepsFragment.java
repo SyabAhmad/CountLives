@@ -41,6 +41,9 @@ public class StepsFragment extends Fragment implements SensorEventListener {
     private TextView tvNoRecentActivities;
     // dayOffset removed (chart not required)
     private android.widget.ImageView ivMotiv1, ivMotiv2, ivMotiv3;
+    // track which URL is currently displayed for each motiv image (primary or fallback)
+    private String currentMotivUrl1, currentMotivUrl2, currentMotivUrl3;
+    private boolean triedFallback1 = false, triedFallback2 = false, triedFallback3 = false;
     private SensorManager sensorManager;
     private Sensor stepSensor;
     private int liveSteps = 0;
@@ -261,17 +264,48 @@ public class StepsFragment extends Fragment implements SensorEventListener {
             "https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=300"
         };
 
+        // If primary remote images fail, try this remote fallback URL, otherwise use local drawable fallback.
+        final String remoteFallback = "https://images.squarespace-cdn.com/content/v1/64a5428b0a8e4f5a25060263/4299df31-6dda-475e-a87b-c9069ffd3277/Olympic+weightlifting+-+Fortress+Gym+4.jpg";
+
+        // Use a default motivational drawable as fallback when a remote image cannot be fetched
         com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
-                .placeholder(R.drawable.ic_launcher_foreground)
-                .error(R.drawable.ic_launcher_foreground)
-                .centerCrop();
+            .placeholder(R.drawable.ic_motiv_default)
+            .error(R.drawable.ic_motiv_default)
+            .fallback(R.drawable.ic_motiv_default)
+            .centerCrop();
 
         // Load first image and wire click only if view exists
         if (ivMotiv1 != null) {
             try {
+                currentMotivUrl1 = motivationUrls[0];
                 com.bumptech.glide.Glide.with(this)
                     .load(motivationUrls[0])
                     .apply(options)
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                            android.util.Log.w("StepsFragment", "Motiv 1 failed, trying remote fallback", e);
+                            // Try remote fallback once
+                            if (!triedFallback1) {
+                                triedFallback1 = true;
+                                try {
+                                    currentMotivUrl1 = remoteFallback;
+                                    com.bumptech.glide.Glide.with(StepsFragment.this)
+                                        .load(remoteFallback)
+                                        .apply(options)
+                                        .into(ivMotiv1);
+                                } catch (Exception ex) {
+                                    android.util.Log.w("StepsFragment", "Remote fallback load failed", ex);
+                                }
+                            }
+                            return false; // allow error drawable to be shown if fallback also fails
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
                     .into(ivMotiv1);
             } catch (Exception e) {
                 android.util.Log.w("StepsFragment", "Failed to load motivational image 1", e);
@@ -280,7 +314,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
                 if (getContext() != null) {
                     try {
                         android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
-                        intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[0]);
+                        intent.putExtra(ImageActivity.EXTRA_URL, currentMotivUrl1 == null ? motivationUrls[0] : currentMotivUrl1);
                         startActivity(intent);
                     } catch (Exception e) {
                         android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
@@ -292,9 +326,31 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         // Load second image
         if (ivMotiv2 != null) {
             try {
+                currentMotivUrl2 = motivationUrls[1];
                 com.bumptech.glide.Glide.with(this)
                     .load(motivationUrls[1])
                     .apply(options)
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                            android.util.Log.w("StepsFragment", "Motiv 2 failed, trying remote fallback", e);
+                            if (!triedFallback2) {
+                                triedFallback2 = true;
+                                try {
+                                    currentMotivUrl2 = remoteFallback;
+                                    com.bumptech.glide.Glide.with(StepsFragment.this).load(remoteFallback).apply(options).into(ivMotiv2);
+                                } catch (Exception ex) {
+                                    android.util.Log.w("StepsFragment", "Remote fallback load failed", ex);
+                                }
+                            }
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
                     .into(ivMotiv2);
             } catch (Exception e) {
                 android.util.Log.w("StepsFragment", "Failed to load motivational image 2", e);
@@ -315,9 +371,31 @@ public class StepsFragment extends Fragment implements SensorEventListener {
         // Load third image
         if (ivMotiv3 != null) {
             try {
+                currentMotivUrl3 = motivationUrls[2];
                 com.bumptech.glide.Glide.with(this)
                     .load(motivationUrls[2])
                     .apply(options)
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                            android.util.Log.w("StepsFragment", "Motiv 3 failed, trying remote fallback", e);
+                            if (!triedFallback3) {
+                                triedFallback3 = true;
+                                try {
+                                    currentMotivUrl3 = remoteFallback;
+                                    com.bumptech.glide.Glide.with(StepsFragment.this).load(remoteFallback).apply(options).into(ivMotiv3);
+                                } catch (Exception ex) {
+                                    android.util.Log.w("StepsFragment", "Remote fallback load failed", ex);
+                                }
+                            }
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
                     .into(ivMotiv3);
             } catch (Exception e) {
                 android.util.Log.w("StepsFragment", "Failed to load motivational image 3", e);
@@ -327,7 +405,7 @@ public class StepsFragment extends Fragment implements SensorEventListener {
                 if (getContext() != null) {
                     try {
                         android.content.Intent intent = new android.content.Intent(getContext(), ImageActivity.class);
-                        intent.putExtra(ImageActivity.EXTRA_URL, motivationUrls[2]);
+                        intent.putExtra(ImageActivity.EXTRA_URL, currentMotivUrl3 == null ? motivationUrls[2] : currentMotivUrl3);
                         startActivity(intent);
                     } catch (Exception e) {
                         android.util.Log.w("StepsFragment", "Failed to open motivational image", e);
